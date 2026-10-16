@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>ThreeJSTest — Guia técnico</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17263b;
+      --muted: #53647b;
+      --line: #d9e2ee;
+      --surface: #f3f6fa;
+      --blue: #1769d2;
+      --blue-pale: #eaf3ff;
+      --code: #101b2b;
+      --code-ink: #eff5ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--surface);
+      color: var(--ink);
+      font: 16px/1.65 "Segoe UI", Arial, sans-serif;
+    }
+    a { color: #075ab8; text-underline-offset: 3px; }
+    a:focus-visible, summary:focus-visible {
+      outline: 3px solid #1769d2;
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+    .page { max-width: 960px; margin: 0 auto; padding: 44px 24px 64px; }
+    header { padding: 24px 0 32px; border-bottom: 1px solid var(--line); }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--blue);
+      font-size: .78rem;
+      font-weight: 700;
+      letter-spacing: .11em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3 { line-height: 1.25; }
+    h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -.04em; }
+    .lede { max-width: 680px; margin: 14px 0 0; color: var(--muted); font-size: 1.1rem; }
+    h2 { margin: 42px 0 14px; font-size: 1.55rem; letter-spacing: -.02em; }
+    h3 { margin: 20px 0 8px; font-size: 1.08rem; }
+    p { margin: 10px 0; }
+    li + li { margin-top: 5px; }
+    .intro, .note, .success {
+      margin: 22px 0;
+      padding: 15px 18px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+    }
+    .note { border-left: 4px solid #bf7810; }
+    .success { border-left: 4px solid #198754; }
+    .intro { border-left: 4px solid var(--blue); }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 20px 0;
+      padding: 0;
+      list-style: none;
+    }
+    .flow li {
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: white;
+      font-size: .91rem;
+      font-weight: 600;
+    }
+    .flow li:not(:last-child)::after {
+      content: " →";
+      margin-left: 10px;
+      color: var(--blue);
+    }
+    .steps { padding-left: 22px; }
+    .commands, pre {
+      overflow-x: auto;
+      border-radius: 9px;
+      background: var(--code);
+      color: var(--code-ink);
+      font: .88rem/1.55 Consolas, "Cascadia Code", monospace;
+      tab-size: 4;
+    }
+    .commands { padding: 17px 20px; white-space: pre; }
+    details {
+      margin: 12px 0;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: white;
+    }
+    summary { padding: 13px 16px; cursor: pointer; font-weight: 650; }
+    details[open] summary { border-bottom: 1px solid var(--line); }
+    pre { margin: 0; padding: 18px; }
+    code { font-family: Consolas, "Cascadia Code", monospace; font-size: .91em; }
+    p code, li code, td code { padding: 2px 5px; border-radius: 4px; background: #e9eef5; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 11px 13px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #eaf0f8; }
+    .table-wrap { overflow-x: auto; border-radius: 8px; }
+    footer { margin-top: 42px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .92rem; }
+    @media (max-width: 600px) {
+      .page { padding: 28px 16px 44px; }
+      .flow { align-items: stretch; flex-direction: column; }
+      .flow li:not(:last-child)::after { content: " ↓"; }
+      th, td { min-width: 165px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="eyebrow">Power BI Desktop · validação de WebGL</p>
+      <h1>ThreeJSTest</h1>
+      <p class="lede">Guia técnico para criar, compilar e importar um visual mínimo com um cubo 3D que gira e acompanha o tamanho do espaço visual.</p>
+    </header>
+
+    <section class="intro" aria-label="Objetivo do teste">
+      <strong>Objetivo:</strong> validar o caminho de renderização local Three.js → WebGL dentro de um visual do Power BI. Este projeto não usa campos de dados, DAX, modelos externos nem CDN.
+    </section>
+
+    <ol class="flow" aria-label="Fluxo de renderização">
+      <li>Power BI Desktop</li>
+      <li>Visual personalizado</li>
+      <li>visual.ts</li>
+      <li>Three.js</li>
+      <li>WebGLRenderer</li>
+      <li>Cubo girando</li>
+    </ol>
+
+    <h2>Compatibilidade e preparo</h2>
+    <p>O exemplo usa Power BI Visuals Tools <strong>7.2.1</strong>, API do Power BI <strong>5.11.1</strong>, Three.js <strong>0.186.1</strong> e tipos <strong>@types/three 0.186.0</strong>. O template atual declara TypeScript 5.5.4, abaixo da versão mínima declarada pelos tipos do Three.js; por isso atualizamos somente o compilador para TypeScript 5.9.3.</p>
+    <p>O Three.js atual exige WebGL 2. O visual precisa ser executado em um Power BI Desktop com WebGL 2 disponível no ambiente. Consulte a <a href="https://threejs.org/docs/pages/WebGLRenderer.html" target="_blank" rel="noopener">documentação do WebGLRenderer</a>.</p>
+    <p>O template PBIVIZ já configura o empacotamento dos módulos npm em JavaScript. Para este exemplo não é preciso acrescentar configuração de webpack, URL externa ou privilégio no Power BI.</p>
+
+    <h2>1. Executar o projeto desta pasta</h2>
+    <p>O projeto foi gerado com <code>pbiviz new ThreeJSTest</code> e está pronto na pasta <code>ThreeJS</code>. Abra o PowerShell nessa pasta e execute:</p>
+    <pre class="commands"><code>$env:NODE_USE_SYSTEM_CA = "1"
+
+npm.cmd install
+npm.cmd run check
+npm.cmd test
+npm.cmd run package</code></pre>
+    <p>A variável <code>NODE_USE_SYSTEM_CA</code> permite que o Node/npm use os certificados confiáveis do sistema. Ela é útil se a instalação falhar com um erro de certificado HTTPS. Os executáveis <code>.cmd</code> contornam a política local que pode bloquear <code>npm.ps1</code> no PowerShell.</p>
+    <p>No Prompt de Comando (CMD), os comandos npm e PBIVIZ podem ser escritos sem o sufixo <code>.cmd</code>. Use <code>set NODE_USE_SYSTEM_CA=1</code> para definir a variável nessa sessão.</p>
+
+    <h2>2. Arquivos do visual</h2>
+    <p>Os quatro arquivos abaixo já estão implementados nesta pasta. O <code>package-lock.json</code> registra as dependências instaladas. O teste de lógica está em <code>test/selfcheck.mjs</code>; ele simula somente o renderer, usando as classes reais do Three.js para verificar animação, enquadramento e descarte.</p>
+
+    <details>
+      <summary>src/visual.ts — cena, cubo, redimensionamento e animação</summary>
+      <pre><code>"use strict";
+
+import powerbi from "powerbi-visuals-api";
+import * as THREE from "three";
+import "../style/visual.less";
+
+import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
+import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+import IVisual = powerbi.extensibility.visual.IVisual;
+
+export class Visual implements IVisual {
+    private scene: THREE.Scene;
+    private camera: THREE.PerspectiveCamera;
+    private renderer: THREE.WebGLRenderer;
+    private geometry: THREE.BoxGeometry;
+    private material: THREE.MeshStandardMaterial;
+    private cube: THREE.Mesh;
+    private animationFrameId = 0;
+
+    constructor(options: VisualConstructorOptions) {
+        this.scene = new THREE.Scene();
+
+        this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+        this.camera.position.z = 3;
+
+        this.renderer = new THREE.WebGLRenderer({
+            antialias: true,
+            alpha: true
+        });
+        this.renderer.setSize(1, 1);
+        this.renderer.domElement.style.display = "block";
+        options.element.appendChild(this.renderer.domElement);
+
+        this.geometry = new THREE.BoxGeometry(1, 1, 1);
+        this.material = new THREE.MeshStandardMaterial({
+            color: 0x2589ff,
+            roughness: 0.5
+        });
+        this.cube = new THREE.Mesh(this.geometry, this.material);
+        this.scene.add(this.cube);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 3);
+        directionalLight.position.set(3, 4, 5);
+        this.scene.add(directionalLight);
+        this.scene.add(new THREE.AmbientLight(0xffffff, 1));
+
+        this.animate();
+    }
+
+    public update(options: VisualUpdateOptions): void {
+        const width = Math.max(1, options.viewport.width);
+        const height = Math.max(1, options.viewport.height);
+
+        this.renderer.setSize(width, height);
+        this.camera.aspect = width / height;
+        this.camera.position.z = 3 / Math.min(1, this.camera.aspect);
+        this.camera.far = this.camera.position.z + 10;
+        this.camera.updateProjectionMatrix();
+    }
+
+    private animate = (): void => {
+        this.cube.rotation.x += 0.01;
+        this.cube.rotation.y += 0.015;
+        this.renderer.render(this.scene, this.camera);
+        this.animationFrameId = requestAnimationFrame(this.animate);
+    };
+
+    public destroy(): void {
+        cancelAnimationFrame(this.animationFrameId);
+        this.geometry.dispose();
+        this.material.dispose();
+        this.renderer.dispose();
+        this.renderer.domElement.remove();
+        this.scene.clear();
+    }
+}</code></pre>
+    </details>
+
+    <details>
+      <summary>capabilities.json — visual sem campos do Power BI</summary>
+      <pre><code>{
+    "dataRoles": [],
+    "dataViewMappings": [],
+    "privileges": [],
+    "supportsLandingPage": true,
+    "supportsEmptyDataView": true
+}</code></pre>
+      <p>Os indicadores permitem que o Power BI atualize o visual mesmo sem campos associados. Veja <a href="https://learn.microsoft.com/en-us/power-bi/developer/visuals/no-dataroles-support" target="_blank" rel="noopener">visuais sem associação de dados</a>.</p>
+    </details>
+
+    <details>
+      <summary>package.json — dependências do template e versões do teste</summary>
+      <pre><code>{
+  "name": "visual",
+  "description": "default_template_value",
+  "version": "1.0.0.0",
+  "repository": {
+    "type": "default_template_value",
+    "url": "default_template_value"
+  },
+  "license": "MIT",
+  "scripts": {
+    "pbiviz": "pbiviz",
+    "start": "pbiviz start",
+    "package": "pbiviz package",
+    "lint": "npx eslint .",
+    "check": "tsc --noEmit",
+    "test": "node test/selfcheck.mjs"
+  },
+  "dependencies": {
+    "@types/d3": "7.4.3",
+    "d3": "7.9.0",
+    "powerbi-visuals-api": "5.11.1",
+    "powerbi-visuals-utils-formattingmodel": "6.0.4",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "eslint": "^9.11.1",
+    "eslint-plugin-powerbi-visuals": "^1.0.0",
+    "typescript": "5.9.3",
+    "powerbi-visuals-tools": "7.2.1"
+  }
+}</code></pre>
+      <p>As dependências D3 e de formatação foram mantidas como vieram no template. O PBIVIZ foi instalado como dependência de desenvolvimento: <code>npm run package</code> utiliza a ferramenta local do projeto.</p>
+    </details>
+
+    <details>
+      <summary>pbiviz.json — identificação e metadados locais</summary>
+      <pre><code>{
+    "visual": {
+        "name": "threeJSTest",
+        "displayName": "ThreeJSTest",
+        "guid": "threeJSTest45CC1E0F2B4D4A8B9C6D7E8F9012A3B4",
+        "visualClassName": "Visual",
+        "version": "1.0.0.0",
+        "description": "Teste local de um cubo girando com Three.js e WebGL.",
+        "supportUrl": "https://example.com/threejs-test",
+        "gitHubUrl": ""
+    },
+    "apiVersion": "5.11.1",
+    "author": {
+        "name": "Autor de teste local",
+        "email": "teste@example.com"
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": [],
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": []
+}</code></pre>
+      <p>O autor e a URL de suporte são fictícios e servem apenas para este teste local.</p>
+    </details>
+
+    <h2>3. Compilar e empacotar</h2>
+    <p>Na pasta <code>ThreeJS</code>, instale as dependências e rode a verificação do TypeScript:</p>
+    <pre class="commands"><code>$env:NODE_USE_SYSTEM_CA = "1"
+
+npm.cmd install
+npm.cmd run check</code></pre>
+    <p>Se o TypeScript não mostrar erros, gere o pacote:</p>
+    <pre class="commands"><code>npm.cmd run package</code></pre>
+    <p>No CMD, os comandos de compilação e pacote solicitados são:</p>
+    <pre class="commands"><code>set NODE_USE_SYSTEM_CA=1
+npm install
+npm run package</code></pre>
+
+    <h3>Local do pacote gerado</h3>
+    <p>O PBIVIZ grava o arquivo dentro da pasta <code>dist</code>. O nome combina o GUID e a versão definidos no arquivo de metadados:</p>
+    <pre class="commands"><code>dist/threeJSTest45CC1E0F2B4D4A8B9C6D7E8F9012A3B4.1.0.0.0.pbiviz</code></pre>
+
+    <h2>4. Importar no Power BI Desktop</h2>
+    <ol class="steps">
+      <li>Abra o relatório e acesse <strong>Arquivo → Opções e configurações → Opções → Arquivo atual → Configurações do relatório</strong>.</li>
+      <li>Habilite <strong>Desenvolver um visual / Develop a visual</strong> para a sessão atual.</li>
+      <li>No painel Visualizações, abra <strong>… → Importar um visual de um arquivo</strong>.</li>
+      <li>Selecione o arquivo .pbiviz dentro de <code>dist</code> e confirme a importação.</li>
+      <li>Selecione o ícone do visual recém-importado para inseri-lo no relatório. Não adicione campos.</li>
+      <li>Redimensione o visual em paisagem e retrato para conferir o canvas.</li>
+    </ol>
+    <p>Veja as <a href="https://learn.microsoft.com/en-us/power-bi/developer/visuals/import-visual" target="_blank" rel="noopener">instruções oficiais de importação</a>.</p>
+
+    <h2>5. Troubleshooting</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th scope="col">Sintoma</th><th scope="col">O que verificar</th></tr></thead>
+        <tbody>
+          <tr><td>Tela branca</td><td>Confirme que o pacote foi compilado e importado novamente. Confira se o construtor não relatou falha ao criar o contexto WebGL. Teste uma nova instância do visual.</td></tr>
+          <tr><td>WebGL não aparece</td><td>O renderer atual exige WebGL 2. Verifique se o ambiente do Power BI Desktop oferece esse contexto. Uma falha ao criar WebGLRenderer impede a renderização.</td></tr>
+          <tr><td>Erro de TypeScript</td><td>Confira se TypeScript 5.9.3 está instalado e rode <code>npx.cmd tsc --noEmit</code> na pasta do projeto. O <code>tsconfig.json</code> original já tem ES2022 e DOM.</td></tr>
+          <tr><td>Módulo three não encontrado</td><td>Na pasta que contém package.json, rode <code>npm.cmd install</code> e confirme <code>npm.cmd ls three @types/three</code>.</td></tr>
+          <tr><td>pbiviz package falha</td><td>Confira o diretório atual, a saída do TypeScript e os metadados do pbiviz.json. Para mais detalhes, rode <code>npm.cmd run package -- --verbose</code>.</td></tr>
+          <tr><td>Visual aparece, cubo não</td><td>Confirme <code>supportsLandingPage</code> e <code>supportsEmptyDataView</code>. Verifique no código a posição da câmera em Z positivo, as luzes e o loop de animação.</td></tr>
+          <tr><td>Content Security Policy (CSP)</td><td>Confira a diretiva indicada no erro do host. O exemplo importa Three.js via npm e não carrega scripts externos. O visual não precisa acessar uma CDN.</td></tr>
+          <tr><td>Tamanho do canvas incorreto</td><td>O método update precisa usar as dimensões de <code>options.viewport</code>, chamar <code>renderer.setSize()</code> e atualizar o aspecto e a matriz de projeção da câmera.</td></tr>
+          <tr><td>Certificado HTTPS no npm</td><td>No PowerShell, defina <code>$env:NODE_USE_SYSTEM_CA = "1"</code> antes de instalar. Não desative a verificação TLS do npm.</td></tr>
+          <tr><td>Aviso de certificado ou pwsh ao empacotar</td><td>Uma tentativa de gerar certificado local ou uma mensagem sobre recursos opcionais pode aparecer. Confirme se a saída informa <strong>Build completed successfully</strong> e se o arquivo .pbiviz foi criado em dist.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <section class="success">
+      <strong>Critério de sucesso:</strong> importar o arquivo .pbiviz, inserir o visual sem dados, observar o cubo azul girar nos eixos X e Y e confirmar que o canvas acompanha o redimensionamento.
+    </section>
+
+    <footer>
+      <p>Teste de lógica realizado: compilação TypeScript, pacote PBIVIZ, dimensões zero, enquadramento estreito, reutilização de objetos e liberação no método destroy.</p>
+      <p>A geração do pacote foi validada. A renderização dentro do Power BI Desktop ainda precisa ser confirmada no ambiente que executará o visual.</p>
+    </footer>
+  </main>
+</body>
+</html>

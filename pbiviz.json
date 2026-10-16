@@ -1,0 +1,25 @@
+{
+    "visual": {
+        "name": "threeJSTest",
+        "displayName": "ThreeJSTest",
+        "guid": "threeJSTest45CC1E0F2B4D4A8B9C6D7E8F9012A3B4",
+        "visualClassName": "Visual",
+        "version": "1.0.0.0",
+        "description": "Teste local de um cubo girando com Three.js e WebGL.",
+        "supportUrl": "https://example.com/threejs-test",
+        "gitHubUrl": ""
+    },
+    "apiVersion": "5.11.1",
+    "author": {
+        "name": "Autor de teste local",
+        "email": "teste@example.com"
+    },
+    "assets": {
+        "icon": "assets/icon.png"
+    },
+    "externalJS": [],
+    "style": "style/visual.less",
+    "capabilities": "capabilities.json",
+    "dependencies": null,
+    "stringResources": []
+}
